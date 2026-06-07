@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Birthday Surprise</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Poppins',sans-serif;
+background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+overflow:hidden;
+height:100vh;
+color:white;
+}
+
+/* Stars */
+
+.stars{
+position:fixed;
+width:100%;
+height:100%;
+z-index:0;
+}
+
+.star{
+position:absolute;
+background:white;
+border-radius:50%;
+animation:twinkle 2s infinite alternate;
+}
+
+@keyframes twinkle{
+from{opacity:.2}
+to{opacity:1}
+}
+
+/* Main Screen */
+
+.screen{
+position:relative;
+z-index:2;
+width:100%;
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+text-align:center;
+padding:20px;
+}
+
+/* Gift */
+
+.gift{
+font-size:120px;
+cursor:pointer;
+animation:bounce 2s infinite;
+}
+
+@keyframes bounce{
+50%{
+transform:translateY(-20px);
+}
+}
+
+.tap{
+margin-top:10px;
+font-size:20px;
+}
+
+/* Card */
+
+#card{
+display:none;
+max-width:800px;
+animation:fadeIn 1s ease;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:scale(.8);
+}
+to{
+opacity:1;
+transform:scale(1);
+}
+}
+
+.name{
+font-family:'Dancing Script',cursive;
+font-size:70px;
+margin-bottom:10px;
+color:#ffd700;
+}
+
+.cake{
+font-size:90px;
+margin:15px 0;
+animation:float 2s infinite;
+}
+
+@keyframes float{
+50%{
+transform:translateY(-10px);
+}
+}
+
+.message{
+font-size:22px;
+line-height:1.8;
+min-height:120px;
+padding:20px;
+}
+
+.replay{
+margin-top:20px;
+padding:15px 35px;
+border:none;
+border-radius:30px;
+cursor:pointer;
+font-size:18px;
+background:#ff4f81;
+color:white;
+}
+
+/* Hearts */
+
+.heart{
+position:fixed;
+font-size:20px;
+animation:rise 8s linear forwards;
+pointer-events:none;
+}
+
+@keyframes rise{
+0%{
+transform:translateY(100vh);
+opacity:1;
+}
+100%{
+transform:translateY(-100px);
+opacity:0;
+}
+}
+
+.firework{
+position:fixed;
+font-size:30px;
+animation:explode 2s linear forwards;
+pointer-events:none;
+}
+
+@keyframes explode{
+0%{
+transform:scale(0);
+opacity:1;
+}
+100%{
+transform:scale(3);
+opacity:0;
+}
+}
+
+.gallery{
+margin-top:25px;
+display:flex;
+justify-content:center;
+gap:10px;
+flex-wrap:wrap;
+}
+
+.gallery img{
+width:120px;
+height:120px;
+object-fit:cover;
+border-radius:15px;
+border:3px solid white;
+}
+
+.music{
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="screen">
+
+<div id="giftSection">
+
+<div class="gift" onclick="openGift()">
+🎁
+</div>
+
+<div class="tap">
+Tap The Gift
+</div>
+
+</div>
+
+<div id="card">
+
+<div class="cake">🎂</div>
+
+<div class="name" id="name"></div>
+
+<div class="message" id="message"></div>
+
+<div class="gallery">
+
+<!-- Later add photos -->
+
+<img src="images/photo1.jpg"
+onerror="this.style.display='none'">
+
+<img src="images/photo2.jpg"
+onerror="this.style.display='none'">
+
+<img src="images/photo3.jpg"
+onerror="this.style.display='none'">
+
+</div>
+
+<div class="music">
+
+<audio controls autoplay loop>
+
+<source src="audio/birthday.mp3" type="audio/mpeg">
+
+</audio>
+
+</div>
+
+<button class="replay" onclick="location.reload()">
+🎉 Replay Celebration
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+// Stars
+
+for(let i=0;i<150;i++){
+
+let s=document.createElement("div");
+
+s.className="star";
+
+let size=Math.random()*3;
+
+s.style.width=size+"px";
+s.style.height=size+"px";
+
+s.style.left=Math.random()*100+"%";
+s.style.top=Math.random()*100+"%";
+
+s.style.animationDelay=Math.random()*2+"s";
+
+document.getElementById("stars").appendChild(s);
+
+}
+
+// URL Data
+
+const params=new URLSearchParams(window.location.search);
+
+const name=params.get("name") || "Birthday Star";
+
+const msg=params.get("msg") || "Wishing you happiness, success and endless smiles.";
+
+// Open Gift
+
+function openGift(){
+
+document.getElementById("giftSection").style.display="none";
+
+document.getElementById("card").style.display="block";
+
+document.getElementById("name").innerText=name;
+
+typeWriter(msg);
+
+launchFireworks();
+
+setInterval(createHeart,500);
+
+}
+
+// Typewriter
+
+function typeWriter(text){
+
+let i=0;
+
+let speed=40;
+
+let box=document.getElementById("message");
+
+box.innerHTML="";
+
+function typing(){
+
+if(i<text.length){
+
+box.innerHTML+=text.charAt(i);
+
+i++;
+
+setTimeout(typing,speed);
+
+}
+
+}
+
+typing();
+
+}
+
+// Hearts
+
+function createHeart(){
+
+let heart=document.createElement("div");
+
+heart.className="heart";
+
+heart.innerHTML="❤️";
+
+heart.style.left=Math.random()*100+"vw";
+
+heart.style.fontSize=
+(Math.random()*20+15)+"px";
+
+document.body.appendChild(heart);
+
+setTimeout(()=>heart.remove(),8000);
+
+}
+
+// Fireworks
+
+function launchFireworks(){
+
+for(let i=0;i<50;i++){
+
+let fw=document.createElement("div");
+
+fw.className="firework";
+
+fw.innerHTML=["🎆","✨","🎇","🎉"][Math.floor(Math.random()*4)];
+
+fw.style.left=Math.random()*100+"vw";
+
+fw.style.top=Math.random()*100+"vh";
+
+document.body.appendChild(fw);
+
+setTimeout(()=>fw.remove(),2000);
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
