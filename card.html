@@ -278,11 +278,11 @@
 (function(){
   // ---------- read query params ----------
   const params = new URLSearchParams(window.location.search);
-  const name = (params.get('name') || 'Friend').trim() || 'Friend';
+  const rawName = (params.get('name') || '').trim();
   const msg = (params.get('msg') || 'Wishing you a very Happy Birthday!').trim();
 
-  document.getElementById('name-label-1').textContent = 'Hey ' + name + ' 🎈';
-  document.getElementById('name-label-2').textContent = name + ' 🎂';
+  document.getElementById('name-label-1').textContent = rawName ? ('Hey ' + rawName + ' 🎈') : 'Tap to begin 🎈';
+  document.getElementById('name-label-2').textContent = rawName ? (rawName + ' 🎂') : '🎂';
 
   const photoFiles = ['images/photo1.jpg','images/photo2.jpg','images/photo3.jpg'];
 
@@ -411,9 +411,38 @@
   }
   function confettiCannon(){
     const w = confCanvas.width;
-    burstConfettiAt(w*0.2, confCanvas.height*0.9, 60);
-    burstConfettiAt(w*0.8, confCanvas.height*0.9, 60);
-    burstConfettiAt(w*0.5, confCanvas.height*0.7, 40);
+    burstConfettiAt(w*0.2, confCanvas.height*0.9, 80);
+    burstConfettiAt(w*0.8, confCanvas.height*0.9, 80);
+    burstConfettiAt(w*0.5, confCanvas.height*0.7, 60);
+    setTimeout(()=>{
+      burstConfettiAt(w*0.1, confCanvas.height*0.85, 40);
+      burstConfettiAt(w*0.9, confCanvas.height*0.85, 40);
+    }, 250);
+  }
+  // gentle continuous confetti falling from the top, used during the message scene
+  function spawnAmbientConfettiPiece(){
+    const x = Math.random()*confCanvas.width;
+    confetti.push({
+      x, y:-20,
+      vx:(Math.random()-0.5)*1.2,
+      vy: Math.random()*1.5+1.5,
+      rot: Math.random()*360,
+      vr:(Math.random()-0.5)*8,
+      size: Math.random()*6+4,
+      color: confColors[Math.floor(Math.random()*confColors.length)],
+      life:1
+    });
+  }
+  let ambientTimer = null;
+  function startAmbientConfetti(){
+    stopAmbientConfetti();
+    ambientTimer = setInterval(()=>{
+      spawnAmbientConfettiPiece();
+      spawnAmbientConfettiPiece();
+    }, 220);
+  }
+  function stopAmbientConfetti(){
+    if(ambientTimer){ clearInterval(ambientTimer); ambientTimer=null; }
   }
   function animConfetti(){
     cctx.clearRect(0,0,confCanvas.width,confCanvas.height);
@@ -451,7 +480,11 @@
   giftWrap.addEventListener('click', openGift);
   function openGift(){
     giftRing.classList.add('go');
-    burstConfettiAt(window.innerWidth/2, window.innerHeight/2, 30);
+    burstConfettiAt(window.innerWidth/2, window.innerHeight/2, 50);
+    setTimeout(()=>{
+      burstConfettiAt(window.innerWidth*0.3, window.innerHeight*0.3, 25);
+      burstConfettiAt(window.innerWidth*0.7, window.innerHeight*0.3, 25);
+    }, 150);
     setTimeout(()=>{
       showScene('cake');
       buildCandles();
@@ -481,6 +514,7 @@
     c.appendChild(smoke);
     candlesLeft--;
     if(candlesLeft<=0){
+      confettiCannon();
       setTimeout(()=>{
         showScene('message');
         startMessageScene();
@@ -543,11 +577,24 @@
   function startMessageScene(){
     renderStack();
     typeMessage();
+    startAmbientConfetti();
   }
+
+  // tap anywhere on the message scene for an extra confetti pop
+  scenes.message.addEventListener('click', (e)=>{
+    if(e.target.closest('#photo-stack') || e.target.closest('.replay-btn')) return;
+    burstConfettiAt(e.clientX, e.clientY, 22);
+  });
+  scenes.message.addEventListener('touchstart', (e)=>{
+    if(e.target.closest('#photo-stack') || e.target.closest('.replay-btn')) return;
+    const t = e.touches[0];
+    if(t) burstConfettiAt(t.clientX, t.clientY, 22);
+  }, {passive:true});
 
   // ---------- replay ----------
   document.getElementById('replayBtn').addEventListener('click', ()=>{
     confettiCannon();
+    stopAmbientConfetti();
     setTimeout(()=>{
       showScene('gift');
     }, 900);
