@@ -275,7 +275,7 @@
     <span class="gift-emoji">🎁</span>
     <div class="burst-ring" id="giftRing"></div>
   </div>
-  <p class="tap-hint">Tap the gift</p>
+  <p class="tap-hint" id="tapHint">Loading your surprise…</p>
 </section>
 
 <!-- Scene 2: Cake / candles -->
@@ -304,7 +304,7 @@
 <button id="music-toggle" title="Toggle music">🎵</button>
 
 <script>
-(function(){
+(async function(){
   // ---------- read query params ----------
   const params = new URLSearchParams(window.location.search);
   const rawName = (params.get('name') || '').trim();
@@ -313,7 +313,81 @@
   document.getElementById('name-label-1').textContent = rawName ? ('Hey ' + rawName + ' 🎈') : 'Tap to begin 🎈';
   document.getElementById('name-label-2').textContent = rawName ? (rawName + ' 🎂') : '🎂';
 
-  const photoFiles = ['images/photo1.jpg','images/photo2.jpg','images/photo3.jpg'];
+  const IMG_EXT = /\.(jpe?g|png|gif|webp|avif)$/i;
+  const AUDIO_EXT = /\.(mp3|wav|ogg|m4a|aac)$/i;
+
+  // Auto-detect files sitting in the repo's photos/ and audio/ folders via
+  // GitHub's public contents API, so any number of files with any names work.
+  // Falls back to explicit ?photo1=&song= URL params, then to hardcoded
+  // defaults, if the API call fails or times out.
+  async function listRepoFolder(folder){
+    const owner = window.location.hostname.split('.')[0];
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const repo = pathParts[0] || '';
+    if(!owner || !repo) return null;
+    const url = 'https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+folder;
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 3000);
+    try{
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if(!res.ok) return null;
+      const data = await res.json();
+      if(!Array.isArray(data)) return null;
+      return data
+        .filter(item => item.type === 'file')
+        .map(item => ({ name: item.name, url: item.download_url }))
+        .sort((a,b) => a.name.localeCompare(b.name));
+    } catch(err){
+      clearTimeout(timeout);
+      return null;
+    }
+  }
+
+  let photoFiles = [];
+  let songPath, surprisePath, hasSurprise = true;
+
+  const explicitPhotos = [params.get('photo1'), params.get('photo2'), params.get('photo3')].filter(Boolean);
+  if(explicitPhotos.length){
+    photoFiles = explicitPhotos;
+  } else {
+    const detected = await listRepoFolder('photos');
+    if(detected && detected.length){
+      photoFiles = detected.filter(f => IMG_EXT.test(f.name)).map(f => f.url);
+    }
+    if(!photoFiles.length){
+      photoFiles = ['photos/photo1.jpg','photos/photo2.jpg','photos/photo3.jpg'];
+    }
+  }
+
+  if(params.get('song') || params.get('surprise')){
+    songPath = params.get('song') || 'audio/birthday.mp3';
+    surprisePath = params.get('surprise') || 'audio/surprise.mp3';
+  } else {
+    const detectedAudio = await listRepoFolder('audio');
+    const audioFiles = (detectedAudio || []).filter(f => AUDIO_EXT.test(f.name));
+    if(audioFiles.length >= 2){
+      const surpriseMatch = audioFiles.find(f => /surprise/i.test(f.name));
+      const surpriseFile = surpriseMatch || audioFiles[1];
+      const mainFile = audioFiles.find(f => f !== surpriseFile) || audioFiles[0];
+      songPath = mainFile.url;
+      surprisePath = surpriseFile.url;
+    } else if(audioFiles.length === 1){
+      songPath = audioFiles[0].url;
+      hasSurprise = false;
+    } else {
+      songPath = 'audio/birthday.mp3';
+      surprisePath = 'audio/surprise.mp3';
+    }
+  }
+
+  document.getElementById('bgAudio').src = songPath;
+  if(hasSurprise){
+    document.getElementById('surpriseAudio').src = surprisePath;
+  } else {
+    document.getElementById('surpriseBtn').style.display = 'none';
+  }
+  document.getElementById('tapHint').textContent = 'Tap the gift';
 
   // ---------- starfield ----------
   const starCanvas = document.getElementById('stars');
@@ -571,7 +645,7 @@
 
   // ---------- photo stack ----------
   const stack = document.getElementById('photo-stack');
-  let order = [0,1,2];
+  let order = photoFiles.map((_, i) => i);
   function renderStack(){
     stack.innerHTML = '';
     order.forEach((idx, pos) => {
@@ -584,7 +658,9 @@
       const img = document.createElement('img');
       img.src = photoFiles[idx];
       img.alt = 'memory photo';
-      img.onerror = function(){ card.style.display='none'; };
+      img.onerror = function(){
+        card.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#2a1a4a;color:#c9b6ff;font-size:13px;padding:10px;text-align:center;">Photo not found:<br>'+photoFiles[idx]+'</div>';
+      };
       card.appendChild(img);
       if(pos===0){
         card.style.cursor='grab';
