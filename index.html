@@ -164,6 +164,99 @@
     border:1px solid rgba(255,255,255,.25) !important;
   }
 
+  .section-title{
+    margin-top:22px;
+    margin-bottom:4px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--gold);
+  }
+  .section-title .hint{
+    font-weight:400;
+    font-size:11px;
+    color:var(--lilac);
+    opacity:.85;
+  }
+  .upload-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-top:8px;
+  }
+  .upload-slot{
+    background:rgba(255,255,255,0.05);
+    border:1.5px dashed rgba(255,255,255,0.2);
+    border-radius:12px;
+    padding:8px;
+    text-align:center;
+  }
+  .upload-label{
+    display:block;
+    font-size:11px;
+    color:var(--lilac);
+    margin-bottom:6px;
+  }
+  .upload-slot input[type="file"]{
+    width:100%;
+    font-size:10px;
+    color:var(--cream);
+    padding:0;
+    border:none;
+    background:none;
+    margin-bottom:6px;
+  }
+  .thumb{
+    display:none;
+    width:100%;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:8px;
+    margin-top:4px;
+  }
+  .thumb.show{display:block;}
+  .filename{
+    font-size:10px;
+    color:var(--lilac);
+    opacity:.75;
+    margin-top:4px;
+    word-break:break-all;
+  }
+  input[type="file"]{
+    width:100%;
+    color:var(--cream);
+    font-size:13px;
+    padding:8px;
+    border:1.5px dashed rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.05);
+    border-radius:10px;
+    margin-top:6px;
+    margin-bottom:4px;
+  }
+  .audio-preview{
+    width:100%;
+    height:36px;
+    margin-top:4px;
+    display:none;
+  }
+  .audio-preview.show{display:block;}
+
+  #uploadChecklist{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.12);
+    font-size:12.5px;
+    color:var(--lilac);
+    line-height:1.7;
+    text-align:left;
+  }
+  #uploadChecklist strong{color:var(--gold);}
+  #uploadChecklist code{
+    background:rgba(255,255,255,.1);
+    padding:1px 6px;
+    border-radius:6px;
+    color:var(--cream);
+  }
+
   #toast{
     position:fixed;
     left:50%;bottom:28px;
@@ -235,6 +328,40 @@
     <label for="message">Your birthday message</label>
     <textarea id="message" rows="4" placeholder="Write your birthday message"></textarea>
 
+    <div class="section-title">🖼️ Photos <span class="hint">(3 slots, optional)</span></div>
+    <div class="upload-grid">
+      <div class="upload-slot">
+        <label class="upload-label" for="photo1">Photo 1</label>
+        <input type="file" id="photo1" accept="image/*">
+        <img class="thumb" id="thumb1" alt="">
+        <div class="filename" id="fname1"></div>
+      </div>
+      <div class="upload-slot">
+        <label class="upload-label" for="photo2">Photo 2</label>
+        <input type="file" id="photo2" accept="image/*">
+        <img class="thumb" id="thumb2" alt="">
+        <div class="filename" id="fname2"></div>
+      </div>
+      <div class="upload-slot">
+        <label class="upload-label" for="photo3">Photo 3</label>
+        <input type="file" id="photo3" accept="image/*">
+        <img class="thumb" id="thumb3" alt="">
+        <div class="filename" id="fname3"></div>
+      </div>
+    </div>
+
+    <div class="section-title">🎵 Audio <span class="hint">(optional — leave blank to use defaults)</span></div>
+
+    <label class="upload-label" for="songFile">Birthday jingle (plays automatically)</label>
+    <input type="file" id="songFile" accept="audio/*">
+    <audio id="songPreview" class="audio-preview" controls></audio>
+    <div class="filename" id="songName"></div>
+
+    <label class="upload-label" for="surpriseFile">Surprise song (plays on tap)</label>
+    <input type="file" id="surpriseFile" accept="audio/*">
+    <audio id="surprisePreview" class="audio-preview" controls></audio>
+    <div class="filename" id="surpriseName"></div>
+
     <button id="generateBtn" onclick="generateLink()">✨ Generate Birthday Link</button>
 
     <div id="linkBox">
@@ -243,6 +370,7 @@
         <button class="copyBtn" onclick="copyLink()">📋 Copy Link</button>
         <button class="previewBtn" onclick="previewLink()">👀 Preview</button>
       </div>
+      <div id="uploadChecklist"></div>
     </div>
 
   </div>
@@ -402,8 +530,44 @@
   window.__confettiCannon = confettiCannon;
 })();
 
-// ---------- form logic (kept the same behavior, just nicer feedback) ----------
+// ---------- live previews for uploaded files ----------
+function setupImagePreview(inputId, thumbId, fnameId){
+  const input = document.getElementById(inputId);
+  const thumb = document.getElementById(thumbId);
+  const fname = document.getElementById(fnameId);
+  input.addEventListener('change', ()=>{
+    const f = input.files[0];
+    if(!f){ thumb.classList.remove('show'); fname.textContent=''; return; }
+    thumb.src = URL.createObjectURL(f);
+    thumb.classList.add('show');
+    fname.textContent = f.name;
+  });
+}
+function setupAudioPreview(inputId, audioId, fnameId){
+  const input = document.getElementById(inputId);
+  const audioEl = document.getElementById(audioId);
+  const fname = document.getElementById(fnameId);
+  input.addEventListener('change', ()=>{
+    const f = input.files[0];
+    if(!f){ audioEl.classList.remove('show'); audioEl.removeAttribute('src'); fname.textContent=''; return; }
+    audioEl.src = URL.createObjectURL(f);
+    audioEl.classList.add('show');
+    fname.textContent = f.name;
+  });
+}
+setupImagePreview('photo1','thumb1','fname1');
+setupImagePreview('photo2','thumb2','fname2');
+setupImagePreview('photo3','thumb3','fname3');
+setupAudioPreview('songFile','songPreview','songName');
+setupAudioPreview('surpriseFile','surprisePreview','surpriseName');
+
+// ---------- form logic ----------
 let lastLink = "";
+
+function pickedFileName(inputId, fallback){
+  const f = document.getElementById(inputId).files[0];
+  return f ? f.name : null; // null means "use default, no upload needed"
+}
 
 function generateLink(){
 
@@ -417,21 +581,40 @@ function generateLink(){
     window.location.origin +
     window.location.pathname.replace("index.html", "");
 
-  let link =
-    base +
-    "card.html?name=" +
-    name +
-    "&msg=" +
-    msg;
+  const photo1 = pickedFileName('photo1');
+  const photo2 = pickedFileName('photo2');
+  const photo3 = pickedFileName('photo3');
+  const song = pickedFileName('songFile');
+  const surprise = pickedFileName('surpriseFile');
+
+  let link = base + "card.html?name=" + name + "&msg=" + msg;
+  const toUpload = [];
+
+  if(photo1){ link += "&photo1=" + encodeURIComponent("photos/"+photo1); toUpload.push({slot:'Photo 1', file:photo1, folder:'photos'}); }
+  if(photo2){ link += "&photo2=" + encodeURIComponent("photos/"+photo2); toUpload.push({slot:'Photo 2', file:photo2, folder:'photos'}); }
+  if(photo3){ link += "&photo3=" + encodeURIComponent("photos/"+photo3); toUpload.push({slot:'Photo 3', file:photo3, folder:'photos'}); }
+  if(song){ link += "&song=" + encodeURIComponent("audio/"+song); toUpload.push({slot:'Birthday jingle', file:song, folder:'audio'}); }
+  if(surprise){ link += "&surprise=" + encodeURIComponent("audio/"+surprise); toUpload.push({slot:'Surprise song', file:surprise, folder:'audio'}); }
 
   lastLink = link;
 
   document.getElementById("generatedLink").innerHTML =
     '<a href="' + link + '" target="_blank">' + link + '</a>';
 
+  const checklistEl = document.getElementById("uploadChecklist");
+  if(toUpload.length){
+    let html = '<strong>Before sharing, upload these files to your repo:</strong><br>';
+    toUpload.forEach(u=>{
+      html += '• ' + u.slot + ' → <code>' + u.folder + '/' + u.file + '</code><br>';
+    });
+    html += 'Use the exact filenames shown above (capitalization matters on GitHub Pages).';
+    checklistEl.innerHTML = html;
+  } else {
+    checklistEl.innerHTML = '<strong>No files selected</strong> — this link will automatically use whatever photos and songs are already sitting in your repo\'s <code>photos/</code> and <code>audio/</code> folders, no matter what they\'re named.';
+  }
+
   const box = document.getElementById("linkBox");
   box.classList.add("show");
-  // trigger reveal transition on next frame
   requestAnimationFrame(()=> box.classList.add("reveal"));
 
   if(window.__confettiCannon) window.__confettiCannon();
