@@ -211,6 +211,33 @@
   }
   .replay-btn:active{transform:scale(.95);}
 
+  .surprise-btn{
+    margin-top:10px;
+    background:rgba(255,255,255,.08);
+    color:var(--cream);
+    border:2px dashed var(--lilac);
+    padding:11px 20px;
+    border-radius:999px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    animation:surprise-pulse 2s ease-in-out infinite;
+  }
+  .surprise-btn.active{
+    background:linear-gradient(135deg,var(--lilac),var(--pink));
+    color:var(--ink);
+    border-style:solid;
+    animation:surprise-pulse-fast 0.9s ease-in-out infinite;
+  }
+  @keyframes surprise-pulse{
+    0%,100%{transform:scale(1);box-shadow:0 0 0 rgba(201,182,255,0);}
+    50%{transform:scale(1.04);box-shadow:0 0 16px rgba(201,182,255,.45);}
+  }
+  @keyframes surprise-pulse-fast{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.06);}
+  }
+
   /* music toggle */
   #music-toggle{
     position:fixed;bottom:18px;right:18px;z-index:5;
@@ -269,7 +296,9 @@
   <div id="photo-stack"></div>
   <p class="photo-hint">Swipe or tap the photos</p>
   <button class="replay-btn" id="replayBtn">🎉 Replay Celebration</button>
+  <button class="surprise-btn" id="surpriseBtn">🎁 Play me for a surprise</button>
   <audio id="bgAudio" src="audio/birthday.mp3" loop preload="auto"></audio>
+  <audio id="surpriseAudio" src="audio/surprise.mp3" preload="auto"></audio>
 </section>
 
 <button id="music-toggle" title="Toggle music">🎵</button>
@@ -582,11 +611,11 @@
 
   // tap anywhere on the message scene for an extra confetti pop
   scenes.message.addEventListener('click', (e)=>{
-    if(e.target.closest('#photo-stack') || e.target.closest('.replay-btn')) return;
+    if(e.target.closest('#photo-stack') || e.target.closest('.replay-btn') || e.target.closest('.surprise-btn')) return;
     burstConfettiAt(e.clientX, e.clientY, 22);
   });
   scenes.message.addEventListener('touchstart', (e)=>{
-    if(e.target.closest('#photo-stack') || e.target.closest('.replay-btn')) return;
+    if(e.target.closest('#photo-stack') || e.target.closest('.replay-btn') || e.target.closest('.surprise-btn')) return;
     const t = e.touches[0];
     if(t) burstConfettiAt(t.clientX, t.clientY, 22);
   }, {passive:true});
@@ -595,6 +624,8 @@
   document.getElementById('replayBtn').addEventListener('click', ()=>{
     confettiCannon();
     stopAmbientConfetti();
+    if(surpriseAudio.currentTime !== undefined){ surpriseAudio.pause(); surpriseAudio.currentTime = 0; }
+    resetSurpriseBtn();
     setTimeout(()=>{
       showScene('gift');
     }, 900);
@@ -610,6 +641,8 @@
       musicBtn.classList.remove('playing');
       musicBtn.textContent = '🎵';
     } else {
+      surpriseAudio.pause();
+      resetSurpriseBtn();
       audio.play().catch(()=>{});
       musicBtn.classList.add('playing');
       musicBtn.textContent = '🎶';
@@ -627,6 +660,35 @@
       }).catch(()=>{});
     }
   }, { once:true });
+
+  // ---------- surprise song ----------
+  const surpriseAudio = document.getElementById('surpriseAudio');
+  const surpriseBtn = document.getElementById('surpriseBtn');
+  let surprisePlaying = false;
+  function resetSurpriseBtn(){
+    surprisePlaying = false;
+    surpriseBtn.classList.remove('active');
+    surpriseBtn.textContent = '🎁 Play me for a surprise';
+  }
+  surpriseBtn.addEventListener('click', ()=>{
+    if(surprisePlaying){
+      surpriseAudio.pause();
+      surpriseAudio.currentTime = 0;
+      resetSurpriseBtn();
+    } else {
+      audio.pause();
+      musicBtn.classList.remove('playing');
+      musicBtn.textContent = '🎵';
+      playing = false;
+      surpriseAudio.currentTime = 0;
+      surpriseAudio.play().catch(()=>{});
+      surprisePlaying = true;
+      surpriseBtn.classList.add('active');
+      surpriseBtn.textContent = '🎉 Surprise playing...';
+      confettiCannon();
+    }
+  });
+  surpriseAudio.addEventListener('ended', resetSurpriseBtn);
 
 })();
 </script>
